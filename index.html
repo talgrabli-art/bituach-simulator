@@ -57,6 +57,12 @@ html,body{margin:0;background:var(--bg);color:var(--ink);
 .seg.smoke button.on{background:var(--warn)}
 .spacer{flex:1}
 
+.client-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(90deg,var(--ink),var(--ink-2));
+  color:#fff;border-radius:var(--radius);padding:13px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.client-banner .cb-label{font-size:11px;font-weight:700;color:#aebfd4;letter-spacing:.6px;
+  background:rgba(255,255,255,.1);padding:3px 11px;border-radius:999px}
+.client-banner .cb-name{font-size:18px;font-weight:800;letter-spacing:-.2px}
+
 .company-pill{display:flex;align-items:center;gap:8px;background:var(--surface);
   border:1px solid var(--line);border-radius:999px;padding:7px 14px 7px 10px;
   font-size:13px;font-weight:600;box-shadow:var(--shadow)}
@@ -164,6 +170,11 @@ tr.best .rank{background:var(--good);color:#fff}
       <button data-m="single" class="on">חברה בודדת</button>
       <button data-m="compare">השוואת חברות</button>
     </div>
+  </div>
+
+  <div class="client-banner" id="clientBanner" style="display:none">
+    <span class="cb-label">לקוח</span>
+    <span class="cb-name" id="cbName"></span>
   </div>
 
   <div class="client">
@@ -465,6 +476,12 @@ function render(){
 /* ---- URL parameter pre-fill (for the Fireberry button) ---- */
 (function prefill(){
   const q=new URLSearchParams(location.search);
+  const nm=(q.get('name')||q.get('accountname')||'').trim();
+  if(nm && nm!=='{accountname}'){
+    document.getElementById('cbName').textContent=nm;
+    document.getElementById('clientBanner').style.display='flex';
+    document.title=nm+' · סימולטור תעריפונים';
+  }
   const setSeg=(id,v)=>{const seg=document.getElementById(id);if(!seg)return;
     seg.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));};
   if(q.has('age')){const a=parseInt(q.get('age'));if(!isNaN(a)){state.age=a;document.getElementById('age').value=a;}}
