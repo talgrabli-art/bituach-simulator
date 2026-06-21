@@ -207,6 +207,40 @@ tr.best .rank{background:var(--good);color:#fff}
 .ci-add{border:0;background:var(--good-soft);color:var(--good);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:18px;font-weight:800;line-height:1}
 .ci-add:hover{background:#d6 ebe2;background:#cfe9df}
 @media print{.cart{box-shadow:none;border:1px solid #000}.cart-head{background:#fff;color:#000;border-bottom:1px solid #000}.btn-print,.btn-ghost,.ci-add,.btn-add{display:none}}
+.top-actions{display:flex;align-items:center;gap:10px}
+.gear-btn{border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);border-radius:10px;padding:9px 14px;cursor:pointer;font:inherit;font-weight:700;font-size:13px;white-space:nowrap;transition:.12s}
+.gear-btn:hover{border-color:var(--accent);color:var(--ink)}
+.modal-back{position:fixed;inset:0;background:rgba(15,25,40,.5);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px}
+.modal{background:var(--surface);border-radius:16px;width:min(880px,100%);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.3);overflow:hidden}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 12px}
+.modal-head h2{margin:0;font-size:18px;color:var(--ink)}
+.modal-x{border:0;background:var(--panel);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:15px;color:var(--ink-2)}
+.modal-sub{padding:0 22px 14px;font-size:12.5px;color:var(--muted);line-height:1.5}
+.modal-body{padding:0 22px;overflow-y:auto;flex:1}
+.ds-co,.ds-cat{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.ds-co button,.ds-cat button{border:1px solid var(--line-2);background:#fff;border-radius:999px;padding:7px 14px;cursor:pointer;font:inherit;font-weight:700;font-size:12.5px;color:var(--ink-2);transition:.12s}
+.ds-co button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.ds-cat button.on{background:var(--accent);color:#1d1402;border-color:var(--accent)}
+.ds-list{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.ds-plan{border:1px solid var(--line);border-radius:11px;padding:13px 14px;background:var(--panel)}
+.ds-plan-top{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.ds-plan input,.ds-plan select{border:1px solid var(--line-2);border-radius:7px;padding:7px 9px;font:inherit;font-size:13px;color:var(--ink);background:#fff;outline:none}
+.ds-plan .ds-name{flex:1;min-width:160px;font-weight:700}
+.ds-plan .ds-code{width:90px}
+.ds-plan .ds-type{width:120px}
+.ds-plan .ds-val{width:74px}
+.ds-plan .ds-del{margin-inline-start:auto;border:0;background:#fde8e8;color:#c0392b;border-radius:7px;padding:7px 11px;cursor:pointer;font-weight:700;font-size:12px}
+.ds-bands{margin-top:10px;display:flex;flex-direction:column;gap:6px}
+.ds-band-row{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--ink-2)}
+.ds-band-row input{width:70px}
+.ds-band-row .ds-band-del{border:0;background:#f0f0f0;border-radius:6px;width:26px;height:30px;cursor:pointer;color:#888}
+.ds-band-add{align-self:flex-start;border:1px dashed var(--line-2);background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:700;color:var(--ink-2)}
+.ds-note-in{width:100%;margin-top:9px}
+.ds-add{width:100%;border:1px dashed var(--accent);background:#fff8ec;color:#8a6400;border-radius:10px;padding:11px;cursor:pointer;font-weight:800;font-size:13.5px;margin-bottom:16px}
+.modal-foot{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-top:1px solid var(--line);background:var(--surface);gap:10px;flex-wrap:wrap}
+.ds-foot-l{display:flex;gap:8px;flex-wrap:wrap}
+.ds-empty{font-size:13px;color:var(--muted);padding:14px;text-align:center;background:var(--panel);border-radius:10px}
+@media print{.top-actions .gear-btn{display:none}.modal-back{display:none!important}}
 </style>
 </head>
 <body>
@@ -217,10 +251,13 @@ tr.best .rank{background:var(--good);color:#fff}
       <div><h1>סימולטור תעריפונים</h1>
         <p>מתן סוכנות לביטוח · מחשבון פרמיה והשוואת חברות</p></div>
     </div>
-    <div class="modeSw" id="modeSw">
-      <button data-m="single" class="on">חברה בודדת</button>
-      <button data-m="compare">השוואת חברות</button>
-      <button data-m="family">משפחתי</button>
+    <div class="top-actions">
+      <div class="modeSw" id="modeSw">
+        <button data-m="single" class="on">חברה בודדת</button>
+        <button data-m="compare">השוואת חברות</button>
+        <button data-m="family">משפחתי</button>
+      </div>
+      <button class="gear-btn" id="settingsBtn" title="הגדרות הנחות">⚙️ הנחות</button>
     </div>
   </div>
 
@@ -244,9 +281,11 @@ tr.best .rank{background:var(--good);color:#fff}
       <div class="field" id="cmpSumField" style="display:none"><label>סכום ביטוח / פיצוי (₪)</label>
         <input type="text" id="cmpSum" class="sumwide tnum" value="1,000,000"></div>
       <div class="spacer"></div>
-      <div class="field"><label>הנחת סוכן בסיסית</label>
+      <div class="field" id="discPlanField"><label>מדרג הנחה</label>
+        <select id="discPlanSel" style="height:38px;min-width:170px;border:1px solid var(--line-2);border-radius:8px;padding:0 10px;font-size:13.5px;color:var(--ink);background:#fff;cursor:pointer;outline:none"></select></div>
+      <div class="field"><label>אחוז הנחה</label>
         <div class="disc-cell" style="height:38px">
-          <input class="disc-in" id="agentDisc" type="number" min="0" max="100" value="0" style="height:38px;width:92px;font-size:14px"></div></div>
+          <input class="disc-in" id="agentDisc" type="number" min="0" max="100" value="0" style="height:38px;width:84px;font-size:14px"></div></div>
       <div class="field" id="companyField"><label>חברה</label>
         <div class="company-pill"><span class="dot"></span>
           <select id="companySel"></select></div></div>
@@ -281,6 +320,30 @@ tr.best .rank{background:var(--good);color:#fff}
   </div>
 
   <div class="cart" id="cartPanel"></div>
+</div>
+
+<div class="modal-back" id="discModal" style="display:none">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>⚙️ הגדרות מדרגי הנחה</h2>
+      <button class="modal-x" id="discClose">✕</button>
+    </div>
+    <div class="modal-sub">נהלו את מדרגי ההנחה לכל חברה ומוצר. ההגדרות נשמרות במכשיר זה. השתמשו ב"ייצוא" כדי לשתף/לגבות.</div>
+    <div class="modal-body">
+      <div class="ds-co" id="dsCoTabs"></div>
+      <div class="ds-cat" id="dsCatTabs"></div>
+      <div class="ds-list" id="dsList"></div>
+      <button class="ds-add" id="dsAddPlan">➕ הוסף מדרג הנחה</button>
+    </div>
+    <div class="modal-foot">
+      <div class="ds-foot-l">
+        <button class="btn-ghost" id="dsExport">ייצוא (JSON)</button>
+        <button class="btn-ghost" id="dsImport">ייבוא</button>
+        <button class="btn-ghost" id="dsReset">איפוס לברירת מחדל</button>
+      </div>
+      <button class="btn-print" id="dsDone">סגירה ושמירה</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -325,9 +388,10 @@ const PRODUCTS=[{k:'life',label:'ביטוח חיים'},{k:'mortgage',label:'מש
 
 /* ---------- shared client controls ---------- */
 function markAge(){const a=document.getElementById('age');if(a)a.classList.toggle('need',!(state.age>=1));}
-document.getElementById('age').addEventListener('input',e=>{state.age=parseInt(e.target.value)||0;if(state.mode==='family')writeActive();markAge();refresh();});
+document.getElementById('age').addEventListener('input',e=>{state.age=parseInt(e.target.value)||0;if(state.mode==='family')writeActive();markAge();applySelectedPlan();refresh();});
 document.getElementById('clientName').addEventListener('input',e=>{state.clientName=e.target.value.trim();renderCart();});
 document.getElementById('agentDisc').addEventListener('input',e=>{state.agentDisc=clampDisc(e.target.value);
+  const sp=document.getElementById('discPlanSel');if(sp)sp.value='manual';
   document.querySelectorAll('.disc-in').forEach(i=>{if(i.id!=='agentDisc')i.placeholder=state.agentDisc||0;});refresh();});
 document.getElementById('cmpSum').addEventListener('input',e=>{state.cmpSum=parseSum(e.target.value);refreshCompare();});
 document.getElementById('cmpSum').addEventListener('blur',e=>{e.target.value=state.cmpSum.toLocaleString('he-IL');});
@@ -498,7 +562,7 @@ function renderPanel(){const t=totals();const flash=Math.abs(t.pay-lastPay)>0.00
   document.getElementById('resetBtn').onclick=()=>{state.sel={};renderSingle();};
   const ab=document.getElementById('addCartBtn');if(ab)ab.onclick=addCurrentSelection;
 }
-function renderSingle(){renderTabs();
+function renderSingle(){renderTabs();populateDiscPlans();
   const P=prod();
   if((state.product==='life'||state.product==='mortgage') && (!P||!P[state.product])){
     tableCard.className='card solo';
@@ -543,6 +607,7 @@ function compareRows(){
 }
 function refreshCompare(){renderCompare();}
 function renderCompare(){
+  populateDiscPlans();
   const kindLabel=CMP_KINDS.find(k=>k.k===state.cmpKind).label;
   let rows=compareRows();
   const priced=rows.filter(r=>!r.await).sort((a,b)=>a.pay-b.pay);
@@ -727,9 +792,136 @@ function render(){
   if(['life','mk','cancer'].includes(q.get('cmp')))state.cmpKind=q.get('cmp');
 })();
 
+/* ===================== DISCOUNT ENGINE + SETTINGS ===================== */
+const CATS=[{k:'risk',label:'ריסק'},{k:'mortgage',label:'משכנתא'},{k:'health',label:'בריאות'},{k:'mk',label:'מחלות קשות'},{k:'cancer',label:'פיצוי לסרטן'}];
+function pid(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+const DEFAULT_DISCOUNTS={
+  menora:{
+    risk:[{id:pid(),name:'ריסק – מדרג גיל (דוגמה, ערכו לפי הטבלה)',code:'',type:'banded',bands:[{from:0,to:29,pct:60},{from:30,to:39,pct:55},{from:40,to:49,pct:45},{from:50,to:120,pct:15}],note:'דוגמה להמחשה — עדכנו לפי טבלת ההנחות שלכם'}],
+    mortgage:[],
+    health:[{id:pid(),name:'בריאות 25% ל-10 שנים',code:'101650',type:'flat',value:25,note:''},{id:pid(),name:'בריאות 15% ל-10 שנים',code:'101651',type:'flat',value:15,note:''}],
+    mk:[{id:pid(),name:'מחלות קשות בלבד – 20% לכל החיים',code:'101341',type:'flat',value:20,note:''},{id:pid(),name:'מחלות קשות 25% ל-10 שנים',code:'101650',type:'flat',value:25,note:'קרן אור TOP'}],
+    cancer:[{id:pid(),name:'סרטן בלבד – 45% (מגיל 30)',code:'101144',type:'flat',value:45,note:''},{id:pid(),name:'סרטן בלבד – 30% ל-10 שנים',code:'101559',type:'flat',value:30,note:''}]
+  },
+  phoenix:{
+    risk:[],mortgage:[],
+    health:[{id:pid(),name:'בריאות – ניתוחים שקל ראשון 15% ל-10 שנים',code:'',type:'flat',value:15,note:'כולל נספחים וכתבי שירות, ללא בסיס'}],
+    mk:[{id:pid(),name:'מחלות קשות/סרטן ל-10 שנים – 25%',code:'',type:'flat',value:25,note:'ללא מגבלת גיל'}],
+    cancer:[{id:pid(),name:'סרטן בלבד ל-10 שנים – 45%',code:'',type:'flat',value:45,note:'מגיל 30 ומעלה'}]
+  },
+  migdal:{
+    risk:[],mortgage:[],
+    health:[{id:pid(),name:'בריאות עד גיל 21 – 25% (100-350K)',code:'',type:'flat',value:25,note:'מעל 350K: 30%'},{id:pid(),name:'בריאות מגיל 21+ – 30% (100-250K)',code:'',type:'flat',value:30,note:'מעל 250K: 35%'}],
+    mk:[{id:pid(),name:'מחלות/סרטן – 25% (100-250K)',code:'',type:'flat',value:25,note:''}],
+    cancer:[{id:pid(),name:'מחלות/סרטן – 25% (100-250K)',code:'',type:'flat',value:25,note:''}]
+  },
+  clal:{
+    risk:[],mortgage:[],
+    health:[{id:pid(),name:'בריאות – בסיס וכתבי שירות 15%',code:'21355',type:'flat',value:15,note:'מפרמיה 150₪'},{id:pid(),name:'בריאות – שקל ראשון 20% / שב"ן 15% / בסיס 20%',code:'21585',type:'flat',value:20,note:'מפרמיה 250₪'}],
+    mk:[{id:pid(),name:'מחלות קשות/סרטן (מזור) – 20%',code:'',type:'flat',value:20,note:''}],
+    cancer:[{id:pid(),name:'מחלות קשות/סרטן (מזור) – 20%',code:'',type:'flat',value:20,note:''}]
+  },
+  ayalon:{
+    risk:[],mortgage:[],
+    health:[{id:pid(),name:'בריאות – רובד בסיס / אמבולטורי 15%',code:'',type:'flat',value:15,note:''}],
+    mk:[{id:pid(),name:'מחלות קשות/סרטן (מזור) – 20%',code:'',type:'flat',value:20,note:''}],
+    cancer:[{id:pid(),name:'מחלות קשות/סרטן (מזור) – 20%',code:'',type:'flat',value:20,note:''}]
+  }
+};
+let DISCOUNTS;
+try{const s=localStorage.getItem('matan_discounts_v1');DISCOUNTS=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_DISCOUNTS));}
+catch(e){DISCOUNTS=JSON.parse(JSON.stringify(DEFAULT_DISCOUNTS));}
+function saveDiscounts(){try{localStorage.setItem('matan_discounts_v1',JSON.stringify(DISCOUNTS));}catch(e){}}
+function currentCat(){
+  const compare=(state.mode==='compare')||(state.mode==='family'&&state.familySub==='compare');
+  if(compare)return state.cmpKind==='life'?'risk':state.cmpKind;
+  if(state.product==='life')return 'risk';
+  if(state.product==='mortgage')return 'mortgage';
+  return 'health';
+}
+function planPct(plan,age){
+  if(!plan)return 0;
+  if(plan.type==='flat')return plan.value||0;
+  for(const b of (plan.bands||[]))if(age>=(+b.from)&&age<=(+b.to))return +b.pct||0;
+  return 0;
+}
+let lastDiscKey='__';
+function populateDiscPlans(){
+  const sel=document.getElementById('discPlanSel');if(!sel)return;
+  const cat=currentCat();const key=state.company+'|'+cat;
+  if(key===lastDiscKey)return; lastDiscKey=key;
+  const plans=((DISCOUNTS[state.company]||{})[cat])||[];
+  sel.innerHTML='<option value="manual">ידני / ללא</option>'+plans.map(p=>`<option value="${p.id}">${p.name}${p.code?(' · '+p.code):''}</option>`).join('');
+  sel.value='manual';
+}
+function applySelectedPlan(){
+  const sel=document.getElementById('discPlanSel');if(!sel||sel.value==='manual')return;
+  const cat=currentCat();const plan=(((DISCOUNTS[state.company]||{})[cat])||[]).find(p=>p.id===sel.value);
+  if(!plan)return; state.agentDisc=clampDisc(planPct(plan,state.age));
+  document.getElementById('agentDisc').value=state.agentDisc;
+  document.querySelectorAll('.disc-in').forEach(i=>{if(i.id!=='agentDisc')i.placeholder=state.agentDisc||0;});
+}
+document.getElementById('discPlanSel').addEventListener('change',()=>{applySelectedPlan();refresh();});
+
+/* ---- settings modal ---- */
+let dsCo='menora',dsCat='health';
+function openDisc(){dsCo=state.company;dsCat=currentCat();document.getElementById('discModal').style.display='flex';renderDsCo();renderDsCat();renderDsList();}
+function closeDisc(){document.getElementById('discModal').style.display='none';lastDiscKey='__';render();}
+document.getElementById('settingsBtn').onclick=openDisc;
+document.getElementById('discClose').onclick=closeDisc;
+document.getElementById('dsDone').onclick=closeDisc;
+document.getElementById('discModal').addEventListener('mousedown',e=>{if(e.target.id==='discModal')closeDisc();});
+function renderDsCo(){document.getElementById('dsCoTabs').innerHTML=ORDER.map(id=>`<button data-co="${id}" class="${id===dsCo?'on':''}">${CO[id].name}</button>`).join('');
+  document.querySelectorAll('#dsCoTabs button').forEach(b=>b.onclick=()=>{dsCo=b.dataset.co;renderDsCo();renderDsList();});}
+function renderDsCat(){document.getElementById('dsCatTabs').innerHTML=CATS.map(c=>`<button data-cat="${c.k}" class="${c.k===dsCat?'on':''}">${c.label}</button>`).join('');
+  document.querySelectorAll('#dsCatTabs button').forEach(b=>b.onclick=()=>{dsCat=b.dataset.cat;renderDsCat();renderDsList();});}
+function plansFor(){DISCOUNTS[dsCo]=DISCOUNTS[dsCo]||{};DISCOUNTS[dsCo][dsCat]=DISCOUNTS[dsCo][dsCat]||[];return DISCOUNTS[dsCo][dsCat];}
+function renderDsList(){
+  const list=plansFor();const el=document.getElementById('dsList');
+  if(!list.length){el.innerHTML='<div class="ds-empty">אין מדרגי הנחה למוצר זה. הוסיפו אחד למטה.</div>';return;}
+  el.innerHTML=list.map((p,i)=>{
+    const flat=p.type!=='banded';
+    const bands=(p.bands||[]).map((b,bi)=>`<div class="ds-band-row" data-i="${i}" data-bi="${bi}">
+        מגיל <input type="number" class="dsb-from" value="${b.from}"> עד <input type="number" class="dsb-to" value="${b.to}"> הנחה <input type="number" class="dsb-pct" value="${b.pct}">%
+        <button class="ds-band-del" title="מחק">✕</button></div>`).join('');
+    return `<div class="ds-plan" data-i="${i}">
+      <div class="ds-plan-top">
+        <input class="ds-name" placeholder="שם המדרג" value="${(p.name||'').replace(/"/g,'&quot;')}">
+        <input class="ds-code" placeholder="קוד" value="${(p.code||'').replace(/"/g,'&quot;')}">
+        <select class="ds-type"><option value="flat" ${flat?'selected':''}>אחוז קבוע</option><option value="banded" ${!flat?'selected':''}>מדרג לפי גיל</option></select>
+        ${flat?`<input class="ds-val" type="number" placeholder="%" value="${p.value!=null?p.value:''}">`:''}
+        <button class="ds-del" title="מחק מדרג">מחק</button>
+      </div>
+      ${flat?'':`<div class="ds-bands">${bands}<button class="ds-band-add">➕ הוסף טווח גיל</button></div>`}
+      <input class="ds-note-in" placeholder="הערה (לא חובה)" value="${(p.note||'').replace(/"/g,'&quot;')}">
+    </div>`;
+  }).join('');
+  // wire
+  el.querySelectorAll('.ds-plan').forEach(pl=>{const i=+pl.dataset.i;const p=list[i];
+    pl.querySelector('.ds-name').oninput=e=>{p.name=e.target.value;saveDiscounts();};
+    pl.querySelector('.ds-code').oninput=e=>{p.code=e.target.value;saveDiscounts();};
+    pl.querySelector('.ds-type').onchange=e=>{p.type=e.target.value;if(p.type==='banded'&&!p.bands)p.bands=[{from:0,to:120,pct:p.value||0}];saveDiscounts();renderDsList();};
+    const v=pl.querySelector('.ds-val');if(v)v.oninput=e=>{p.value=clampDisc(e.target.value);saveDiscounts();};
+    pl.querySelector('.ds-note-in').oninput=e=>{p.note=e.target.value;saveDiscounts();};
+    pl.querySelector('.ds-del').onclick=()=>{list.splice(i,1);saveDiscounts();renderDsList();};
+    const ba=pl.querySelector('.ds-band-add');if(ba)ba.onclick=()=>{p.bands.push({from:0,to:120,pct:0});saveDiscounts();renderDsList();};
+  });
+  el.querySelectorAll('.ds-band-row').forEach(r=>{const i=+r.dataset.i,bi=+r.dataset.bi;const b=list[i].bands[bi];
+    r.querySelector('.dsb-from').oninput=e=>{b.from=+e.target.value||0;saveDiscounts();};
+    r.querySelector('.dsb-to').oninput=e=>{b.to=+e.target.value||0;saveDiscounts();};
+    r.querySelector('.dsb-pct').oninput=e=>{b.pct=clampDisc(e.target.value);saveDiscounts();};
+    r.querySelector('.ds-band-del').onclick=()=>{list[i].bands.splice(bi,1);saveDiscounts();renderDsList();};
+  });
+}
+document.getElementById('dsAddPlan').onclick=()=>{plansFor().push({id:pid(),name:'מדרג חדש',code:'',type:'flat',value:0,note:''});saveDiscounts();renderDsList();};
+document.getElementById('dsReset').onclick=()=>{if(confirm('לאפס את כל מדרגי ההנחה לברירת המחדל? פעולה זו תמחק שינויים שביצעת.')){DISCOUNTS=JSON.parse(JSON.stringify(DEFAULT_DISCOUNTS));saveDiscounts();renderDsList();}};
+document.getElementById('dsExport').onclick=()=>{const t=JSON.stringify(DISCOUNTS);
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>alert('הגדרות ההנחות הועתקו ללוח. הדביקו לקובץ לגיבוי או שלחו אלינו.'),()=>prompt('העתיקו את הטקסט:',t));}
+  else prompt('העתיקו את הטקסט:',t);};
+document.getElementById('dsImport').onclick=()=>{const t=prompt('הדביקו כאן JSON של הגדרות הנחה:');if(!t)return;try{const o=JSON.parse(t);DISCOUNTS=o;saveDiscounts();renderDsList();renderDsCo();renderDsCat();alert('יובא בהצלחה.');}catch(e){alert('הטקסט אינו תקין.');}};
+
 render();
 renderCart();
-markAge();
-</script>
+markAge();</script>
 </body>
 </html>
