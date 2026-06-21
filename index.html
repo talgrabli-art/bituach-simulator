@@ -162,6 +162,9 @@ tr.best .rank{background:var(--good);color:#fff}
 .fam-add{border:1px dashed var(--line-2);background:var(--panel);color:var(--ink-2);border-radius:999px;padding:7px 15px;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap;transition:.12s}
 .fam-add:hover{border-color:var(--accent);color:var(--ink)}
 .fam-empty{font-size:12.5px;color:var(--muted)}
+.fam-sub{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
+.fam-sub button{border:0;background:transparent;font:inherit;font-weight:700;font-size:12px;padding:6px 12px;border-radius:7px;cursor:pointer;color:var(--ink-2);transition:.12s}
+.fam-sub button.on{background:var(--ink);color:#fff}
 .cart-member{padding:10px 18px 5px;font-size:12.5px;font-weight:800;color:var(--ink);background:var(--panel);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
 .cart-member b{color:var(--good);font-weight:800}
 .note{font-size:11.5px;color:var(--muted);padding:11px 14px;background:var(--panel);border-top:1px solid var(--line);line-height:1.5}
@@ -249,6 +252,10 @@ tr.best .rank{background:var(--good);color:#fff}
       <span class="fam-title">בני המשפחה</span>
       <div class="fam-chips" id="famChips"></div>
       <button class="fam-add" id="addMemberBtn">➕ הוסף בן משפחה</button>
+      <div class="fam-sub" id="famSub">
+        <button data-fs="single">חברה בודדת</button>
+        <button data-fs="compare" class="on">השוואת חברות</button>
+      </div>
     </div>
   </div>
 
@@ -278,7 +285,7 @@ const state = {
   mode:'single', company:'menora', product:'life',
   age:0, gender:'M', smoke:'non', agentDisc:0,
   cmpKind:'life', cmpSum:0,
-  sel:{}, cart:[], family:[], activeMember:null
+  sel:{}, cart:[], family:[], activeMember:null, familySub:'compare'
 };
 
 const fmt=n=>n.toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -326,7 +333,7 @@ function clampDisc(v){v=parseFloat(v);if(isNaN(v))return 0;return Math.min(100,M
 function activeMem(){return state.family.find(m=>m.id===state.activeMember)||null;}
 function writeActive(){const m=activeMem();if(!m)return;m.age=state.age;m.gender=state.gender;m.smoke=state.smoke;renderFamilyBar();}
 function loadMember(m){
-  state.activeMember=m.id;state.age=m.age||0;state.gender=m.gender;state.smoke=m.smoke;
+  state.activeMember=m.id;state.age=m.age||0;state.gender=m.gender;state.smoke=m.smoke;state.sel={};
   document.getElementById('age').value=m.age||'';
   document.getElementById('memberLabel').value=m.label||'';
   document.getElementById('genderSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===m.gender));
@@ -358,6 +365,9 @@ function renderFamilyBar(){
 }
 document.getElementById('addMemberBtn').onclick=addMember;
 document.getElementById('memberLabel').addEventListener('input',e=>{const m=activeMem();if(m){m.label=e.target.value;renderFamilyBar();}});
+document.getElementById('famSub').querySelectorAll('button').forEach(b=>b.onclick=()=>{
+  document.getElementById('famSub').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');state.familySub=b.dataset.fs;state.sel={};render();});
 
 /* company select */
 const companySel=document.getElementById('companySel');
@@ -375,7 +385,7 @@ document.getElementById('modeSw').querySelectorAll('button').forEach(b=>b.onclic
   if(state.mode==='family'&&!activeMem())loadMember(state.family[0]);
   render();});
 
-function refresh(){ if(state.mode==='single')recalcSoft(); else refreshCompare(); }
+function refresh(){ const showSingle=state.mode==='single'||(state.mode==='family'&&state.familySub==='single'); if(showSingle)recalcSoft(); else refreshCompare(); }
 
 /* ===================== SINGLE MODE ===================== */
 const tabsEl=document.getElementById('tabs'),tableCard=document.getElementById('tableCard'),panel=document.getElementById('panel');
@@ -655,22 +665,24 @@ function addToCart(item){
 }
 function addCurrentSelection(){
   const P=prod();if(!P)return;const coId=state.company,coName=CO[coId].name;let added=0;
+  const mem=state.mode==='family'?(activeMem()?activeMem().label:''):'';
   currentKeys().forEach(key=>{const s=state.sel[key];if(!s||!s.on)return;
     const b=baseForKey(key);if(b<=0)return;const d=s.disc||state.agentDisc;
-    addToCart({coId,coName,covKey:key,label:labelForKey(key),base:b,disc:d,pay:clientPrice(b,d),sum:isPer100kKey(key)?s.sum:0});added++;});
+    addToCart({coId,coName,covKey:key,label:labelForKey(key),base:b,disc:d,pay:clientPrice(b,d),sum:isPer100kKey(key)?s.sum:0,member:mem});added++;});
   const btn=document.getElementById('addCartBtn');
   if(btn){btn.textContent=added?`✓ נוספו ${added} כיסויים לסל`:'סמנו כיסוי תחילה';setTimeout(()=>{if(btn)btn.textContent='➕ הוסף כיסויים אלה לסל ההצעה';},1400);}
 }
 function render(){
-  const single=state.mode==='single';const family=state.mode==='family';
-  document.getElementById('singleView').style.display=single?'':'none';
-  document.getElementById('compareView').style.display=single?'none':'';
-  document.getElementById('companyField').style.display=single?'':'none';
+  const family=state.mode==='family';
+  const showSingle=state.mode==='single'||(family&&state.familySub==='single');
+  document.getElementById('singleView').style.display=showSingle?'':'none';
+  document.getElementById('compareView').style.display=showSingle?'none':'';
+  document.getElementById('companyField').style.display=showSingle?'':'none';
   document.getElementById('cmpSumField').style.display='none';
   document.getElementById('familyBar').style.display=family?'':'none';
   document.getElementById('memberLabelField').style.display=family?'':'none';
   if(family){renderFamilyBar();}
-  if(single)renderSingle(); else renderCompare();
+  if(showSingle)renderSingle(); else renderCompare();
 }
 
 /* ---- URL parameter pre-fill (for the Fireberry button) ---- */
