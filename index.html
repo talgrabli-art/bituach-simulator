@@ -86,6 +86,9 @@ thead th{background:var(--panel);text-align:start;font-weight:600;font-size:11.5
 thead th.num,tbody td.num{text-align:end}
 .grp-row td{background:#fbfcfe;font-weight:700;font-size:12px;color:var(--ink-2);
   padding:9px 14px;border-bottom:1px solid var(--line);letter-spacing:.3px}
+.grp-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.grp-disc{font-weight:600;color:var(--muted);font-size:11.5px;display:flex;align-items:center;gap:6px}
+.grp-plan{border:1px solid var(--line-2);border-radius:7px;padding:4px 8px;font:inherit;font-size:12px;color:var(--ink);background:#fff;cursor:pointer;max-width:230px}
 tbody td{padding:9px 14px;border-bottom:1px solid #eef2f7;vertical-align:middle}
 tbody tr.cov:hover{background:#fafcff}
 tbody tr.off{opacity:.45}
@@ -354,7 +357,7 @@ const state = {
   mode:'single', company:'menora', product:'life',
   age:0, gender:'M', smoke:'non', agentDisc:0,
   cmpKind:'life', cmpSum:0,
-  sel:{}, cart:[], family:[], activeMember:null, familySub:'compare', clientName:''
+  sel:{}, cart:[], family:[], activeMember:null, familySub:'compare', clientName:'', groupPlan:{}
 };
 
 const fmt=n=>n.toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -405,7 +408,7 @@ function clampDisc(v){v=parseFloat(v);if(isNaN(v))return 0;return Math.min(100,M
 function activeMem(){return state.family.find(m=>m.id===state.activeMember)||null;}
 function writeActive(){const m=activeMem();if(!m)return;m.age=state.age;m.gender=state.gender;m.smoke=state.smoke;renderFamilyBar();}
 function loadMember(m){
-  state.activeMember=m.id;state.age=m.age||0;state.gender=m.gender;state.smoke=m.smoke;state.sel={};
+  state.activeMember=m.id;state.age=m.age||0;state.gender=m.gender;state.smoke=m.smoke;state.sel={};state.groupPlan={};
   document.getElementById('age').value=m.age||'';
   document.getElementById('memberLabel').value=m.label||'';
   document.getElementById('genderSeg').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===m.gender));
@@ -439,7 +442,7 @@ document.getElementById('addMemberBtn').onclick=addMember;
 document.getElementById('memberLabel').addEventListener('input',e=>{const m=activeMem();if(m){m.label=e.target.value;renderFamilyBar();}});
 document.getElementById('famSub').querySelectorAll('button').forEach(b=>b.onclick=()=>{
   document.getElementById('famSub').querySelectorAll('button').forEach(x=>x.classList.remove('on'));
-  b.classList.add('on');state.familySub=b.dataset.fs;state.sel={};render();});
+  b.classList.add('on');state.familySub=b.dataset.fs;state.sel={};state.groupPlan={};render();});
 
 /* company select */
 const companySel=document.getElementById('companySel');
@@ -447,7 +450,7 @@ ORDER.forEach(id=>{const o=document.createElement('option');o.value=id;
   o.textContent=CO[id].name+(CO[id].products?'':' — טרם הוזן');o.disabled=!CO[id].products;
   companySel.appendChild(o);});
 companySel.value='menora';
-companySel.addEventListener('change',e=>{state.company=e.target.value;state.sel={};render();});
+companySel.addEventListener('change',e=>{state.company=e.target.value;state.sel={};state.groupPlan={};render();});
 
 /* mode switch */
 document.getElementById('modeSw').querySelectorAll('button').forEach(b=>b.onclick=()=>{
@@ -462,7 +465,7 @@ function refresh(){ const showSingle=state.mode==='single'||(state.mode==='famil
 /* ===================== SINGLE MODE ===================== */
 const tabsEl=document.getElementById('tabs'),tableCard=document.getElementById('tableCard'),panel=document.getElementById('panel');
 function prod(){return CO[state.company].products;}
-function ensureSel(key,def){if(!state.sel[key])state.sel[key]=Object.assign({on:false,disc:0,sum:100000},def);return state.sel[key];}
+function ensureSel(key,def){if(!state.sel[key])state.sel[key]=Object.assign({on:false,sum:100000},def);return state.sel[key];}
 
 function renderTabs(){tabsEl.innerHTML='';PRODUCTS.forEach(p=>{const b=document.createElement('button');
   b.className='tab'+(state.product===p.k?' on':'');b.textContent=p.label;
@@ -514,39 +517,45 @@ function currentKeys(){
   return Object.keys(state.sel).filter(k=>k.startsWith('health.'));}
 function wireSingleInputs(){
   tableCard.querySelectorAll('[data-on]').forEach(c=>c.addEventListener('change',e=>{state.sel[e.target.dataset.on].on=e.target.checked;renderSingle();}));
-  tableCard.querySelectorAll('[data-disc]').forEach(c=>c.addEventListener('input',e=>{const k=e.target.dataset.disc;state.sel[k].disc=clampDisc(e.target.value);recalcSoft();}));
+  tableCard.querySelectorAll('[data-disc]').forEach(c=>c.addEventListener('input',e=>{const k=e.target.dataset.disc;state.sel[k].disc=e.target.value.trim()===''?undefined:clampDisc(e.target.value);recalcSoft();}));
   tableCard.querySelectorAll('[data-sum]').forEach(c=>c.addEventListener('input',e=>{const k=e.target.dataset.sum;state.sel[k].sum=parseSum(e.target.value);recalcSoft();}));}
 function buildHealth(){
   const g=prod().health.groups;tableCard.className='card';let rows='';
-  for(const gk in g){const grp=g[gk];rows+=`<tr class="grp-row"><td colspan="5">${grp.label}</td></tr>`;
-    for(const ck in grp.coverages){const cov=grp.coverages[ck],key='health.'+gk+'.'+ck,per=!!cov.per100k;
-      const s=ensureSel(key,{on:false,sum:0});let sumCell='—';
-      const base=covBase(cov,s.sum);
-      if(per){sumCell=`<input class="sum-in tnum" data-sum="${key}" value="${s.sum||''}" placeholder="0">`;}
-      const disc=s.disc||state.agentDisc,pay=clientPrice(base,disc);
-      rows+=`<tr class="cov ${s.on?'':'off'}" data-row="${key}">
-        <td><span class="cov-name"><input type="checkbox" class="chk" data-on="${key}" ${s.on?'checked':''}>
-        ${cov.label}${per?'<span class="badge">לכל 100K</span>':''}</span></td>
-        <td class="num ${per?'':'muted-cell'}">${sumCell}</td>
-        <td class="num base tnum">${fmt(base)}</td>
-        <td class="num"><span class="disc-cell"><input class="disc-in tnum" data-disc="${key}" value="${s.disc||''}" placeholder="${state.agentDisc||0}"></span></td>
-        <td class="num client-pay tnum">${fmt(pay)}</td></tr>`;}}
+  const covRow=(gk,ck,cov)=>{const key='health.'+gk+'.'+ck,per=!!cov.per100k;
+    const s=ensureSel(key,{on:false,sum:0});const base=covBase(cov,s.sum);
+    let sumCell='—';if(per){sumCell=`<input class="sum-in tnum" data-sum="${key}" value="${s.sum||''}" placeholder="0">`;}
+    const disc=discForKey(key),pay=clientPrice(base,disc);
+    return `<tr class="cov ${s.on?'':'off'}" data-row="${key}">
+      <td><span class="cov-name"><input type="checkbox" class="chk" data-on="${key}" ${s.on?'checked':''}>
+      ${cov.label}${per?'<span class="badge">לכל 100K</span>':''}</span></td>
+      <td class="num ${per?'':'muted-cell'}">${sumCell}</td>
+      <td class="num base tnum">${fmt(base)}</td>
+      <td class="num"><span class="disc-cell"><input class="disc-in tnum" data-disc="${key}" value="${s.disc||''}" placeholder="${disc||0}"></span></td>
+      <td class="num client-pay tnum">${fmt(pay)}</td></tr>`;};
+  for(const gk in g){const grp=g[gk];
+    const byCat={};for(const ck in grp.coverages){const cov=grp.coverages[ck];const cat=cov.catg||'health';(byCat[cat]=byCat[cat]||[]).push([ck,cov]);}
+    const cats=Object.keys(byCat);const multi=cats.length>1;
+    cats.forEach(cat=>{const headLabel=multi?CATLABEL[cat]:grp.label;
+      rows+=`<tr class="grp-row"><td colspan="5">${groupHeadHtml(headLabel,cat)}</td></tr>`;
+      byCat[cat].forEach(([ck,cov])=>{rows+=covRow(gk,ck,cov);});});}
   tableCard.innerHTML=`<table><thead><tr><th>כיסוי</th><th class="num">סכום (₪)</th>
     <th class="num">תעריף בסיס</th><th class="num">הנחה</th><th class="num">פרמיה ללקוח</th></tr></thead>
     <tbody>${rows}</tbody></table>
-    <div class="note">סמנו את הכיסויים שהלקוח מעוניין בהם. מחלות קשות מחושבות לכל 100,000 ₪ פיצוי. הנחה ריקה = הנחת הסוכן (${state.agentDisc||0}%).</div>`;
+    <div class="note">בכל קבוצה ניתן לבחור מדרג הנחה נפרד (בריאות / מחלות קשות / סרטן). הנחה ריקה בשורה = הנחת הקבוצה או הסוכן.</div>`;
   wireSingleInputs();
+  tableCard.querySelectorAll('.grp-plan').forEach(s=>s.onchange=()=>{state.groupPlan[s.dataset.cat]=s.value;recalcSoft();});
 }
 function recalcSoft(){
   tableCard.querySelectorAll('tr.cov').forEach(tr=>{const key=tr.dataset.row;if(!key||!state.sel[key])return;
-    const b=baseForKey(key);const d=state.sel[key].disc||state.agentDisc;
+    const b=baseForKey(key);const d=discForKey(key);
     const be=tr.querySelector('.base');if(be)be.textContent=fmt(b);
+    const di=tr.querySelector('.disc-in');if(di&&!di.value)di.placeholder=(groupPctFor(catForKey(key))!=null?groupPctFor(catForKey(key)):state.agentDisc)||0;
     const pe=tr.querySelector('.client-pay');if(pe)pe.textContent=fmt(clientPrice(b,d));});
   renderPanel();
 }
 function totals(){let base=0,pay=0,items=[];
   currentKeys().forEach(key=>{const s=state.sel[key];if(!s||!s.on)return;
-    const b=baseForKey(key);const d=s.disc||state.agentDisc;
+    const b=baseForKey(key);const d=discForKey(key);
     base+=b;pay+=clientPrice(b,d);items.push([labelForKey(key),clientPrice(b,d)]);});
   return{base,pay,save:base-pay,items};}
 let lastPay=0;
@@ -559,7 +568,7 @@ function renderPanel(){const t=totals();const flash=Math.abs(t.pay-lastPay)>0.00
       <div class="l year">פרמיה שנתית<b class="tnum">${fmt0(t.pay*12)} ₪</b></div></div>
     <button class="cta-primary" id="addCartBtn">＋ הוסף לסל ההצעה</button>
     <div class="cta"><button class="reset" id="resetBtn">איפוס בחירות</button></div>`;
-  document.getElementById('resetBtn').onclick=()=>{state.sel={};renderSingle();};
+  document.getElementById('resetBtn').onclick=()=>{state.sel={};state.groupPlan={};renderSingle();};
   const ab=document.getElementById('addCartBtn');if(ab)ab.onclick=addCurrentSelection;
 }
 function renderSingle(){renderTabs();populateDiscPlans();
@@ -739,7 +748,7 @@ function addCurrentSelection(){
   const P=prod();if(!P)return;const coId=state.company,coName=CO[coId].name;let added=0;
   const mem=state.mode==='family'?(activeMem()?activeMem().label:''):'';
   currentKeys().forEach(key=>{const s=state.sel[key];if(!s||!s.on)return;
-    const b=baseForKey(key);if(b<=0)return;const d=s.disc||state.agentDisc;
+    const b=baseForKey(key);if(b<=0)return;const d=discForKey(key);
     addToCart({coId,coName,covKey:key,label:labelForKey(key),base:b,disc:d,pay:clientPrice(b,d),sum:isPer100kKey(key)?s.sum:0,member:mem});added++;});
   const btn=document.getElementById('addCartBtn');
   if(btn){btn.textContent=added?`✓ נוספו ${added} כיסויים לסל`:'סמנו כיסוי תחילה';setTimeout(()=>{if(btn)btn.textContent='＋ הוסף לסל ההצעה';},1400);}
@@ -844,6 +853,26 @@ function planPct(plan,age){
   if(plan.type==='flat')return plan.value||0;
   for(const b of (plan.bands||[]))if(age>=(+b.from)&&age<=(+b.to))return +b.pct||0;
   return 0;
+}
+const CATLABEL={health:'בריאות',mk:'מחלות קשות',cancer:'פיצוי לסרטן',risk:'ריסק',mortgage:'משכנתא'};
+function catForKey(key){
+  if(key.startsWith('health.')){const p=key.split('.');const gk=p[1],ck=p[2];
+    const grp=prod().health.groups[gk];const cov=grp&&grp.coverages[ck];return (cov&&cov.catg)?cov.catg:'health';}
+  if(key==='mortgage')return 'mortgage';
+  if(key==='life'||key.startsWith('lifex.'))return 'risk';
+  return 'health';
+}
+function groupPctFor(cat){const pidv=state.groupPlan[cat];if(!pidv||pidv==='manual')return null;
+  const plan=(((DISCOUNTS[state.company]||{})[cat])||[]).find(p=>p.id===pidv);return plan?planPct(plan,state.age):null;}
+function discForKey(key){const s=state.sel[key]||{};
+  if(s.disc!=null&&s.disc!=='')return s.disc;
+  const gp=groupPctFor(catForKey(key));if(gp!=null)return gp;
+  return state.agentDisc;}
+function groupHeadHtml(label,cat){
+  const plans=((DISCOUNTS[state.company]||{})[cat])||[];
+  const sel=state.groupPlan[cat]||'manual';
+  const opts='<option value="manual">ידני / ללא</option>'+plans.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${p.name}${p.code?(' · '+p.code):''}</option>`).join('');
+  return `<div class="grp-head"><span>${label}</span><span class="grp-disc">מדרג הנחה: <select class="grp-plan" data-cat="${cat}">${opts}</select></span></div>`;
 }
 let lastDiscKey='__';
 function populateDiscPlans(){
