@@ -135,8 +135,9 @@ tr.best .rank{background:var(--good);color:#fff}
 .brk .l.year{border-top:1px dashed var(--line);padding-top:9px;margin-top:1px}
 .brk .l.year b{font-size:16px}
 .cta-primary{margin-top:14px;width:100%;border:0;background:var(--accent);color:#1d1402;font-weight:800;
-  padding:13px;border-radius:10px;cursor:pointer;font-size:14px;box-shadow:0 6px 16px rgba(200,150,42,.26);transition:.14s}
+  padding:13px;border-radius:10px;cursor:pointer;font-size:14px;white-space:nowrap;box-shadow:0 6px 16px rgba(200,150,42,.26);transition:.14s}
 .cta-primary:hover{transform:translateY(-1px);box-shadow:0 9px 22px rgba(200,150,42,.34)}
+.cta-primary:active{transform:translateY(0)}
 .best-co{margin-top:12px;background:var(--good-soft);border:1px solid rgba(15,122,90,.2);
   border-radius:10px;padding:11px 13px;font-size:12px;color:#0c6e52}
 .best-co b{color:var(--ink);font-weight:800;font-size:15px;display:block;margin-top:2px}
@@ -162,6 +163,9 @@ tr.best .rank{background:var(--good);color:#fff}
 .fam-add{border:1px dashed var(--line-2);background:var(--panel);color:var(--ink-2);border-radius:999px;padding:7px 15px;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap;transition:.12s}
 .fam-add:hover{border-color:var(--accent);color:var(--ink)}
 .fam-empty{font-size:12.5px;color:var(--muted)}
+.req{color:#d9534f;font-weight:800}
+#age.need{border-color:#e0a300;background:#fff8e6;box-shadow:0 0 0 3px rgba(224,163,0,.14)}
+#age.need::placeholder{color:#b07d00;font-weight:700}
 .fam-sub{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:3px;gap:2px}
 .fam-sub button{border:0;background:transparent;font:inherit;font-weight:700;font-size:12px;padding:6px 12px;border-radius:7px;cursor:pointer;color:var(--ink-2);transition:.12s}
 .fam-sub button.on{background:var(--ink);color:#fff}
@@ -227,10 +231,12 @@ tr.best .rank{background:var(--good);color:#fff}
 
   <div class="client">
     <div class="row" id="clientRow">
+      <div class="field" id="clientNameField"><label>שם הלקוח</label>
+        <input type="text" id="clientName" placeholder="שם מלא" style="height:38px;width:150px;border:1px solid var(--line-2);border-radius:8px;padding:0 12px;font-size:14px;color:var(--ink);outline:none"></div>
       <div class="field" id="memberLabelField" style="display:none"><label>בן משפחה</label>
         <input type="text" id="memberLabel" placeholder="אבא / אמא / ילד" style="height:38px;width:130px;border:1px solid var(--line-2);border-radius:8px;padding:0 12px;font-size:14px;color:var(--ink);outline:none"></div>
-      <div class="field"><label>גיל הלקוח</label>
-        <input type="number" id="age" min="0" max="84" value="" placeholder="גיל"></div>
+      <div class="field"><label>גיל הלקוח <span class="req">*</span></label>
+        <input type="number" id="age" min="0" max="84" value="" placeholder="חובה" required></div>
       <div class="field"><label>מין</label>
         <div class="seg" id="genderSeg"><button data-v="M" class="on">גבר</button><button data-v="F">אישה</button></div></div>
       <div class="field"><label>מעשן/ת</label>
@@ -285,7 +291,7 @@ const state = {
   mode:'single', company:'menora', product:'life',
   age:0, gender:'M', smoke:'non', agentDisc:0,
   cmpKind:'life', cmpSum:0,
-  sel:{}, cart:[], family:[], activeMember:null, familySub:'compare'
+  sel:{}, cart:[], family:[], activeMember:null, familySub:'compare', clientName:''
 };
 
 const fmt=n=>n.toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -318,7 +324,9 @@ const clientPrice=(b,d)=>b*(1-d/100);
 const PRODUCTS=[{k:'life',label:'ביטוח חיים'},{k:'mortgage',label:'משכנתא'},{k:'health',label:'בריאות'}];
 
 /* ---------- shared client controls ---------- */
-document.getElementById('age').addEventListener('input',e=>{state.age=parseInt(e.target.value)||0;if(state.mode==='family')writeActive();refresh();});
+function markAge(){const a=document.getElementById('age');if(a)a.classList.toggle('need',!(state.age>=1));}
+document.getElementById('age').addEventListener('input',e=>{state.age=parseInt(e.target.value)||0;if(state.mode==='family')writeActive();markAge();refresh();});
+document.getElementById('clientName').addEventListener('input',e=>{state.clientName=e.target.value.trim();renderCart();});
 document.getElementById('agentDisc').addEventListener('input',e=>{state.agentDisc=clampDisc(e.target.value);
   document.querySelectorAll('.disc-in').forEach(i=>{if(i.id!=='agentDisc')i.placeholder=state.agentDisc||0;});refresh();});
 document.getElementById('cmpSum').addEventListener('input',e=>{state.cmpSum=parseSum(e.target.value);refreshCompare();});
@@ -485,9 +493,8 @@ function renderPanel(){const t=totals();const flash=Math.abs(t.pay-lastPay)>0.00
     <div class="brk"><div class="l">תעריף בסיס<b class="tnum">${fmt(t.base)} ₪</b></div>
       <div class="l save">חיסכון מהנחות<b class="tnum">${fmt(t.save)} ₪</b></div>
       <div class="l year">פרמיה שנתית<b class="tnum">${fmt0(t.pay*12)} ₪</b></div></div>
-    <button class="cta-primary" id="addCartBtn">➕ הוסף כיסויים אלה לסל ההצעה</button>
-    <div class="cta"><button class="print" onclick="window.print()">הדפסה / PDF</button>
-      <button class="reset" id="resetBtn">איפוס</button></div>`;
+    <button class="cta-primary" id="addCartBtn">＋ הוסף לסל ההצעה</button>
+    <div class="cta"><button class="reset" id="resetBtn">איפוס בחירות</button></div>`;
   document.getElementById('resetBtn').onclick=()=>{state.sel={};renderSingle();};
   const ab=document.getElementById('addCartBtn');if(ab)ab.onclick=addCurrentSelection;
 }
@@ -621,8 +628,7 @@ function renderCmpPanel(best,priced){
     <div class="best-co">החברה המשתלמת ביותר<b>${best.name}</b><span>${best.prodLabel}</span></div>
     <div class="brk"><div class="l">יקרה ביותר<b class="tnum">${fmt0(worst.pay)} ₪</b></div>
       <div class="l save">פער חודשי<b class="tnum">${fmt0(spread)} ₪</b></div>
-      <div class="l save year">פער שנתי<b class="tnum">${fmt0(spread*12)} ₪</b></div></div>
-    <div class="cta"><button class="print" onclick="window.print()">הדפסה / PDF</button></div>`;
+      <div class="l save year">פער שנתי<b class="tnum">${fmt0(spread*12)} ₪</b></div></div>`;
 }
 
 /* ===================== OFFER CART ===================== */
@@ -646,7 +652,8 @@ function renderCart(){
   } else {
     body=state.cart.map(cartRowHtml).join('');
   }
-  const title=state.cart.some(i=>i.member)?'סל ההצעה המשפחתית':'סל ההצעה ללקוח';
+  const baseTitle=state.cart.some(i=>i.member)?'סל ההצעה המשפחתית':'סל ההצעה ללקוח';
+  const title=state.clientName?`${baseTitle} · ${state.clientName}`:baseTitle;
   el.innerHTML=`<div class="cart-head"><span class="ct-count">${state.cart.length} כיסויים</span><h3>${title}</h3></div>
     <div class="cart-body">${body}</div>
     <div class="cart-foot"><div class="ct-actions">
@@ -670,7 +677,7 @@ function addCurrentSelection(){
     const b=baseForKey(key);if(b<=0)return;const d=s.disc||state.agentDisc;
     addToCart({coId,coName,covKey:key,label:labelForKey(key),base:b,disc:d,pay:clientPrice(b,d),sum:isPer100kKey(key)?s.sum:0,member:mem});added++;});
   const btn=document.getElementById('addCartBtn');
-  if(btn){btn.textContent=added?`✓ נוספו ${added} כיסויים לסל`:'סמנו כיסוי תחילה';setTimeout(()=>{if(btn)btn.textContent='➕ הוסף כיסויים אלה לסל ההצעה';},1400);}
+  if(btn){btn.textContent=added?`✓ נוספו ${added} כיסויים לסל`:'סמנו כיסוי תחילה';setTimeout(()=>{if(btn)btn.textContent='＋ הוסף לסל ההצעה';},1400);}
 }
 function render(){
   const family=state.mode==='family';
@@ -683,6 +690,7 @@ function render(){
   document.getElementById('memberLabelField').style.display=family?'':'none';
   if(family){renderFamilyBar();}
   if(showSingle)renderSingle(); else renderCompare();
+  if(typeof markAge==='function')markAge();
 }
 
 /* ---- URL parameter pre-fill (for the Fireberry button) ---- */
@@ -721,6 +729,7 @@ function render(){
 
 render();
 renderCart();
+markAge();
 </script>
 </body>
 </html>
