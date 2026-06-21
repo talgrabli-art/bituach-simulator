@@ -496,7 +496,7 @@ function render(){
     document.querySelector('.wrap').insertBefore(bar,document.querySelector('.top').nextSibling);
   }
   const nm=(q.get('name')||q.get('accountname')||'').trim();
-  if(nm && nm!=='{accountname}'){
+  if(nm && !/[{}\[\]$]/.test(nm)){
     document.getElementById('cbName').textContent=nm;
     document.getElementById('clientBanner').style.display='flex';
     document.title=nm+' · סימולטור תעריפונים';
