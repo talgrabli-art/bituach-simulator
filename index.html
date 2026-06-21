@@ -275,7 +275,9 @@ tr.best .rank{background:var(--good);color:#fff}
         <input type="text" id="clientName" placeholder="שם מלא" style="height:38px;width:150px;border:1px solid var(--line-2);border-radius:8px;padding:0 12px;font-size:14px;color:var(--ink);outline:none"></div>
       <div class="field" id="memberLabelField" style="display:none"><label>בן משפחה</label>
         <input type="text" id="memberLabel" placeholder="אבא / אמא / ילד" style="height:38px;width:130px;border:1px solid var(--line-2);border-radius:8px;padding:0 12px;font-size:14px;color:var(--ink);outline:none"></div>
-      <div class="field"><label>גיל הלקוח <span class="req">*</span></label>
+      <div class="field"><label>תאריך לידה</label>
+        <input type="date" id="birthDate" max="2026-06-21" style="height:38px;border:1px solid var(--line-2);border-radius:8px;padding:0 10px;font-size:13.5px;color:var(--ink);outline:none"></div>
+      <div class="field"><label>גיל ביטוחי <span class="req">*</span></label>
         <input type="number" id="age" min="0" max="84" value="" placeholder="חובה" required></div>
       <div class="field"><label>מין</label>
         <div class="seg" id="genderSeg"><button data-v="M" class="on">גבר</button><button data-v="F">אישה</button></div></div>
@@ -391,7 +393,21 @@ const PRODUCTS=[{k:'life',label:'ביטוח חיים'},{k:'mortgage',label:'מש
 
 /* ---------- shared client controls ---------- */
 function markAge(){const a=document.getElementById('age');if(a)a.classList.toggle('need',!(state.age>=1));}
-document.getElementById('age').addEventListener('input',e=>{state.age=parseInt(e.target.value)||0;if(state.mode==='family')writeActive();markAge();applySelectedPlan();refresh();});
+function insuranceAge(iso){
+  if(!iso)return null;const bd=new Date(iso);if(isNaN(bd))return null;
+  const now=new Date();
+  let age=now.getFullYear()-bd.getFullYear();
+  const mNow=now.getMonth(),mBd=bd.getMonth();
+  let months=(mNow-mBd)+(now.getDate()>=bd.getDate()?0:-1);
+  if(months<0){age-=1;months+=12;}            // completed years + leftover months since last birthday
+  if(months>=6)age+=1;                          // 6+ months past birthday → round up to next insurance age
+  return Math.max(0,age);
+}
+document.getElementById('birthDate').addEventListener('input',e=>{
+  const a=insuranceAge(e.target.value);if(a==null)return;
+  state.age=a;const af=document.getElementById('age');af.value=a;
+  if(state.mode==='family')writeActive();markAge();applySelectedPlan();refresh();});
+document.getElementById('age').addEventListener('input',e=>{state.age=parseInt(e.target.value)||0;const bd=document.getElementById('birthDate');if(bd)bd.value='';if(state.mode==='family')writeActive();markAge();applySelectedPlan();refresh();});
 document.getElementById('clientName').addEventListener('input',e=>{state.clientName=e.target.value.trim();renderCart();});
 document.getElementById('agentDisc').addEventListener('input',e=>{state.agentDisc=clampDisc(e.target.value);
   const sp=document.getElementById('discPlanSel');if(sp)sp.value='manual';
@@ -807,31 +823,31 @@ function pid(){return 'p'+Date.now().toString(36)+Math.random().toString(36).sli
 const DEFAULT_DISCOUNTS={
   menora:{
     risk:[{id:pid(),name:'ריסק – מדרג גיל (דוגמה, ערכו לפי הטבלה)',code:'',type:'banded',bands:[{from:0,to:29,pct:60},{from:30,to:39,pct:55},{from:40,to:49,pct:45},{from:50,to:120,pct:15}],note:'דוגמה להמחשה — עדכנו לפי טבלת ההנחות שלכם'}],
-    mortgage:[],
+    mortgage:[{id:pid(),name:'משכנתא – מדרג גיל (דוגמה 65/55/45/35)',code:'',type:'banded',bands:[{from:0,to:29,pct:65},{from:30,to:39,pct:55},{from:40,to:49,pct:45},{from:50,to:120,pct:35}],note:'דוגמה להמחשה — עדכנו לפי טבלת ההנחות שלכם'}],
     health:[{id:pid(),name:'בריאות 25% ל-10 שנים',code:'101650',type:'flat',value:25,note:''},{id:pid(),name:'בריאות 15% ל-10 שנים',code:'101651',type:'flat',value:15,note:''}],
     mk:[{id:pid(),name:'מחלות קשות בלבד – 20% לכל החיים',code:'101341',type:'flat',value:20,note:''},{id:pid(),name:'מחלות קשות 25% ל-10 שנים',code:'101650',type:'flat',value:25,note:'קרן אור TOP'}],
     cancer:[{id:pid(),name:'סרטן בלבד – 45% (מגיל 30)',code:'101144',type:'flat',value:45,note:''},{id:pid(),name:'סרטן בלבד – 30% ל-10 שנים',code:'101559',type:'flat',value:30,note:''}]
   },
   phoenix:{
-    risk:[],mortgage:[],
+    risk:[],mortgage:[{id:pid(),name:'משכנתא – מדרג גיל (דוגמה 65/55/45/35)',code:'',type:'banded',bands:[{from:0,to:29,pct:65},{from:30,to:39,pct:55},{from:40,to:49,pct:45},{from:50,to:120,pct:35}],note:'דוגמה להמחשה — עדכנו לפי טבלת ההנחות שלכם'}],
     health:[{id:pid(),name:'בריאות – ניתוחים שקל ראשון 15% ל-10 שנים',code:'',type:'flat',value:15,note:'כולל נספחים וכתבי שירות, ללא בסיס'}],
     mk:[{id:pid(),name:'מחלות קשות/סרטן ל-10 שנים – 25%',code:'',type:'flat',value:25,note:'ללא מגבלת גיל'}],
     cancer:[{id:pid(),name:'סרטן בלבד ל-10 שנים – 45%',code:'',type:'flat',value:45,note:'מגיל 30 ומעלה'}]
   },
   migdal:{
-    risk:[],mortgage:[],
+    risk:[],mortgage:[{id:pid(),name:'משכנתא – מדרג גיל (דוגמה 65/55/45/35)',code:'',type:'banded',bands:[{from:0,to:29,pct:65},{from:30,to:39,pct:55},{from:40,to:49,pct:45},{from:50,to:120,pct:35}],note:'דוגמה להמחשה — עדכנו לפי טבלת ההנחות שלכם'}],
     health:[{id:pid(),name:'בריאות עד גיל 21 – 25% (100-350K)',code:'',type:'flat',value:25,note:'מעל 350K: 30%'},{id:pid(),name:'בריאות מגיל 21+ – 30% (100-250K)',code:'',type:'flat',value:30,note:'מעל 250K: 35%'}],
     mk:[{id:pid(),name:'מחלות/סרטן – 25% (100-250K)',code:'',type:'flat',value:25,note:''}],
     cancer:[{id:pid(),name:'מחלות/סרטן – 25% (100-250K)',code:'',type:'flat',value:25,note:''}]
   },
   clal:{
-    risk:[],mortgage:[],
+    risk:[],mortgage:[{id:pid(),name:'משכנתא – מדרג גיל (דוגמה 65/55/45/35)',code:'',type:'banded',bands:[{from:0,to:29,pct:65},{from:30,to:39,pct:55},{from:40,to:49,pct:45},{from:50,to:120,pct:35}],note:'דוגמה להמחשה — עדכנו לפי טבלת ההנחות שלכם'}],
     health:[{id:pid(),name:'בריאות – בסיס וכתבי שירות 15%',code:'21355',type:'flat',value:15,note:'מפרמיה 150₪'},{id:pid(),name:'בריאות – שקל ראשון 20% / שב"ן 15% / בסיס 20%',code:'21585',type:'flat',value:20,note:'מפרמיה 250₪'}],
     mk:[{id:pid(),name:'מחלות קשות/סרטן (מזור) – 20%',code:'',type:'flat',value:20,note:''}],
     cancer:[{id:pid(),name:'מחלות קשות/סרטן (מזור) – 20%',code:'',type:'flat',value:20,note:''}]
   },
   ayalon:{
-    risk:[],mortgage:[],
+    risk:[],mortgage:[{id:pid(),name:'משכנתא – מדרג גיל (דוגמה 65/55/45/35)',code:'',type:'banded',bands:[{from:0,to:29,pct:65},{from:30,to:39,pct:55},{from:40,to:49,pct:45},{from:50,to:120,pct:35}],note:'דוגמה להמחשה — עדכנו לפי טבלת ההנחות שלכם'}],
     health:[{id:pid(),name:'בריאות – רובד בסיס / אמבולטורי 15%',code:'',type:'flat',value:15,note:''}],
     mk:[{id:pid(),name:'מחלות קשות/סרטן (מזור) – 20%',code:'',type:'flat',value:20,note:''}],
     cancer:[{id:pid(),name:'מחלות קשות/סרטן (מזור) – 20%',code:'',type:'flat',value:20,note:''}]
