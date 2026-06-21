@@ -9,8 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#14243a; --ink-2:#2c4259; --surface:#ffffff; --bg:#eef2f7;
-  --panel:#f7f9fc; --line:#dde5ef; --line-2:#cdd8e6;
+  --ink:#14243a; --ink-2:#2c4259; --surface:#ffffff; --bg:#f2f5fa;
+  --panel:#f7f9fc; --line:#e3e9f1; --line-2:#d3dde9;
   --accent:#c8962a; --accent-soft:#fbf2dd;
   --good:#0f7a5a; --good-soft:#e6f3ee; --warn:#b4462f;
   --muted:#6b7c91; --radius:10px;
@@ -122,29 +122,31 @@ tr.best .rank{background:var(--good);color:#fff}
 .pend{color:var(--muted);font-style:normal;font-size:12px;font-weight:600}
 .await{color:var(--muted);font-size:12px;background:var(--panel);border-radius:6px;padding:3px 9px;font-weight:600}
 
-.panel{position:sticky;top:16px;background:var(--ink);color:#fff;border-radius:12px;
-  padding:20px 20px 18px;box-shadow:0 14px 34px rgba(20,36,58,.22);overflow:hidden}
-.panel h3{margin:0 0 2px;font-size:13px;font-weight:600;color:#aebfd4;letter-spacing:.4px}
-.panel .total{font-size:42px;font-weight:800;letter-spacing:-1px;line-height:1.05;margin:6px 0 2px}
-.panel .total .cur{font-size:22px;font-weight:600;color:var(--accent);margin-inline-start:4px}
-.panel .per{font-size:12px;color:#93a6bd;margin-bottom:16px}
-.brk{border-top:1px solid rgba(255,255,255,.12);padding-top:14px;display:flex;flex-direction:column;gap:9px}
-.brk .l{display:flex;justify-content:space-between;font-size:13px;color:#cdd9e8}
-.brk .l b{color:#fff;font-weight:700}
-.brk .l.save{color:#7fd9bb}.brk .l.save b{color:#7fd9bb}
-.panel .annual{margin-top:14px;background:rgba(255,255,255,.07);border-radius:9px;
-  padding:11px 13px;display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.panel .annual b{font-size:18px;font-weight:800}
-.best-co{margin-top:14px;background:rgba(127,217,187,.12);border:1px solid rgba(127,217,187,.3);
-  border-radius:9px;padding:11px 13px;font-size:12.5px;color:#bfeede}
-.best-co b{color:#fff;font-weight:800;font-size:15px;display:block;margin-top:2px}
-.cta{margin-top:14px;display:flex;gap:8px}
-.cta button{flex:1;height:40px;border:0;border-radius:9px;font:inherit;font-weight:700;font-size:13.5px;cursor:pointer;transition:.14s}
-.cta .print{background:var(--accent);color:#2a2008}
-.cta .reset{background:rgba(255,255,255,.1);color:#dce6f1}
+.panel{position:sticky;top:16px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;
+  padding:18px 18px 16px;box-shadow:0 10px 30px rgba(20,36,58,.07);overflow:hidden}
+.panel h3{margin:0;font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.3px}
+.panel .total{font-size:38px;font-weight:800;letter-spacing:-1.5px;line-height:1;margin:5px 0 3px;color:var(--ink)}
+.panel .total .cur{font-size:20px;font-weight:700;color:var(--accent);margin-inline-start:3px}
+.panel .per{font-size:11.5px;color:var(--muted);margin-bottom:14px}
+.brk{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.brk .l{display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2)}
+.brk .l b{color:var(--ink);font-weight:700}
+.brk .l.save{color:var(--good)}.brk .l.save b{color:var(--good)}
+.brk .l.year{border-top:1px dashed var(--line);padding-top:9px;margin-top:1px}
+.brk .l.year b{font-size:16px}
+.cta-primary{margin-top:14px;width:100%;border:0;background:var(--accent);color:#1d1402;font-weight:800;
+  padding:13px;border-radius:10px;cursor:pointer;font-size:14px;box-shadow:0 6px 16px rgba(200,150,42,.26);transition:.14s}
+.cta-primary:hover{transform:translateY(-1px);box-shadow:0 9px 22px rgba(200,150,42,.34)}
+.best-co{margin-top:12px;background:var(--good-soft);border:1px solid rgba(15,122,90,.2);
+  border-radius:10px;padding:11px 13px;font-size:12px;color:#0c6e52}
+.best-co b{color:var(--ink);font-weight:800;font-size:15px;display:block;margin-top:2px}
+.best-co span{display:block;color:var(--muted);font-size:11px;margin-top:1px}
+.cta{margin-top:8px;display:flex;gap:8px}
+.cta button{flex:1;height:38px;border:1px solid var(--line-2);background:#fff;border-radius:9px;font:inherit;font-weight:700;font-size:12.5px;cursor:pointer;transition:.14s;color:var(--ink-2)}
+.cta .print{background:var(--ink);color:#fff;border-color:var(--ink)}
 .cta button:hover{transform:translateY(-1px)}
 .flash{animation:flash .4s ease}
-@keyframes flash{0%{color:var(--accent)}100%{color:#fff}}
+@keyframes flash{0%{color:var(--accent)}100%{color:var(--ink)}}
 .note{font-size:11.5px;color:var(--muted);padding:11px 14px;background:var(--panel);border-top:1px solid var(--line);line-height:1.5}
 .subtabs{display:flex;gap:6px;padding:12px 14px 0}
 .subtab{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 16px;
@@ -402,12 +404,12 @@ function renderPanel(){const t=totals();const flash=Math.abs(t.pay-lastPay)>0.00
   panel.innerHTML=`<h3>פרמיה חודשית ללקוח</h3>
     <div class="total tnum ${flash}">${fmt0(t.pay)}<span class="cur">₪</span></div>
     <div class="per">${t.items.length} כיסויים · ${CO[state.company].name} · ${PRODUCTS.find(p=>p.k===state.product).label}</div>
-    <div class="brk"><div class="l">תעריף בסיס (לפני הנחה)<b class="tnum">${fmt(t.base)} ₪</b></div>
-      <div class="l save">חיסכון מהנחות<b class="tnum">${fmt(t.save)} ₪</b></div></div>
-    <div class="annual">פרמיה שנתית<b class="tnum">${fmt0(t.pay*12)} ₪</b></div>
+    <div class="brk"><div class="l">תעריף בסיס<b class="tnum">${fmt(t.base)} ₪</b></div>
+      <div class="l save">חיסכון מהנחות<b class="tnum">${fmt(t.save)} ₪</b></div>
+      <div class="l year">פרמיה שנתית<b class="tnum">${fmt0(t.pay*12)} ₪</b></div></div>
+    <button class="cta-primary" id="addCartBtn">➕ הוסף כיסויים אלה לסל ההצעה</button>
     <div class="cta"><button class="print" onclick="window.print()">הדפסה / PDF</button>
-      <button class="reset" id="resetBtn">איפוס</button></div>
-    <button class="btn-add" id="addCartBtn">➕ הוסף כיסויים אלה לסל ההצעה</button>`;
+      <button class="reset" id="resetBtn">איפוס</button></div>`;
   document.getElementById('resetBtn').onclick=()=>{state.sel={};renderSingle();};
   const ab=document.getElementById('addCartBtn');if(ab)ab.onclick=addCurrentSelection;
 }
@@ -538,12 +540,10 @@ function renderCmpPanel(best,priced){
   cmpPanel.innerHTML=`<h3>הפרמיה הזולה ביותר</h3>
     <div class="total tnum">${fmt0(best.pay)}<span class="cur">₪</span></div>
     <div class="per">לחודש · ${CMP_KINDS.find(k=>k.k===state.cmpKind).label} · ${state.cmpSum.toLocaleString('he-IL')} ₪</div>
-    <div class="best-co">החברה המשתלמת ביותר<b>${best.name}</b>
-      <span style="color:#bfeede;font-size:11.5px">${best.prodLabel}</span></div>
+    <div class="best-co">החברה המשתלמת ביותר<b>${best.name}</b><span>${best.prodLabel}</span></div>
     <div class="brk"><div class="l">יקרה ביותר<b class="tnum">${fmt0(worst.pay)} ₪</b></div>
-      <div class="l save">פער חודשי בין החברות<b class="tnum">${fmt0(spread)} ₪</b></div>
-      <div class="l save">פער שנתי<b class="tnum">${fmt0(spread*12)} ₪</b></div></div>
-    <div class="annual">שנתי (הזולה)<b class="tnum">${fmt0(best.pay*12)} ₪</b></div>
+      <div class="l save">פער חודשי<b class="tnum">${fmt0(spread)} ₪</b></div>
+      <div class="l save year">פער שנתי<b class="tnum">${fmt0(spread*12)} ₪</b></div></div>
     <div class="cta"><button class="print" onclick="window.print()">הדפסה / PDF</button></div>`;
 }
 
