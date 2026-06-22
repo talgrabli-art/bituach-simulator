@@ -887,6 +887,7 @@ let editUnlocked=false,modalOpen=false,fbDoc=null,cloudTimer=null,cloudOK=false;
     fbDoc=firebase.firestore().collection('config').doc('discounts');
     fbDoc.onSnapshot(function(snap){
       cloudOK=true;
+      if(editUnlocked){updateCloudBadge('🔓 מצב עריכה — שינויים נשמרים אוטומטית');return;}
       if(snap&&snap.exists){const v=snap.data();
         if(v&&v.json){try{DISCOUNTS=JSON.parse(v.json);try{localStorage.setItem('matan_discounts_v1',v.json);}catch(e){}}catch(e){return;}
           lastDiscKey='__';
