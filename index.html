@@ -306,6 +306,8 @@ tr.best .rank{background:var(--good);color:#fff}
         <div class="seg smoke" id="smokeSeg"><button data-v="non" class="on">לא</button><button data-v="smk">כן</button></div></div>
       <div class="field" id="cmpSumField" style="display:none"><label>סכום ביטוח / פיצוי (₪)</label>
         <input type="text" id="cmpSum" class="sumwide tnum" value="1,000,000"></div>
+      <div class="field" id="mortTermField" style="display:none"><label>תקופת המשכנתא (שנים)</label>
+        <input type="number" id="mortTerm" min="1" max="40" value="25" style="height:38px;width:90px;border:1px solid var(--line-2);border-radius:8px;padding:0 10px;font-size:14px;color:var(--ink);outline:none"></div>
       <div class="spacer"></div>
       <div class="field" id="discPlanField"><label>מדרג הנחה</label>
         <select id="discPlanSel" style="height:38px;min-width:170px;border:1px solid var(--line-2);border-radius:8px;padding:0 10px;font-size:13.5px;color:var(--ink);background:#fff;cursor:pointer;outline:none"></select></div>
@@ -399,7 +401,7 @@ const state = {
   mode:'single', company:'menora', product:'life',
   age:0, gender:'M', smoke:'non', agentDisc:0,
   cmpKind:'life', cmpSum:0,
-  sel:{}, cart:[], family:[], activeMember:null, familySub:'compare', clientName:'', groupPlan:{}
+  sel:{}, cart:[], family:[], activeMember:null, familySub:'compare', clientName:'', groupPlan:{}, mortTerm:25
 };
 
 const fmt=n=>n.toLocaleString('he-IL',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -449,6 +451,7 @@ document.getElementById('birthDate').addEventListener('input',e=>{
   if(state.mode==='family')writeActive();markAge();applySelectedPlan();refresh();});
 document.getElementById('age').addEventListener('input',e=>{state.age=parseInt(e.target.value)||0;const bd=document.getElementById('birthDate');if(bd)bd.value='';if(state.mode==='family')writeActive();markAge();applySelectedPlan();refresh();});
 document.getElementById('clientName').addEventListener('input',e=>{state.clientName=e.target.value.trim();renderCart();});
+document.getElementById('mortTerm').addEventListener('input',e=>{state.mortTerm=parseInt(e.target.value)||0;});
 document.getElementById('agentDisc').addEventListener('input',e=>{state.agentDisc=clampDisc(e.target.value);
   const sp=document.getElementById('discPlanSel');if(sp)sp.value='manual';
   document.querySelectorAll('.disc-in').forEach(i=>{if(i.id!=='agentDisc')i.placeholder=state.agentDisc||0;});refresh();});
@@ -525,7 +528,7 @@ function ensureSel(key,def){if(!state.sel[key])state.sel[key]=Object.assign({on:
 
 function renderTabs(){tabsEl.innerHTML='';PRODUCTS.forEach(p=>{const b=document.createElement('button');
   b.className='tab'+(state.product===p.k?' on':'');b.textContent=p.label;
-  b.onclick=()=>{state.product=p.k;renderSingle();};tabsEl.appendChild(b);});}
+  b.onclick=()=>{state.product=p.k;const mf=document.getElementById('mortTermField');if(mf)mf.style.display=(p.k==='mortgage')?'':'none';renderSingle();};tabsEl.appendChild(b);});}
 
 function buildLifeOrMort(prodKey){
   const isLife=prodKey==='life',P=prod();
@@ -828,17 +831,23 @@ function premiumEvolution(){
   const isLife=state.product==='life',isMort=state.product==='mortgage';
   if(!isLife&&!isMort)return null;
   const node=isLife?P.life:P.mortgage;if(!node||!node.rates)return null;
-  const keys=Object.keys(node.rates).map(Number);const maxAge=Math.max(...keys);
-  const s=state.sel[isLife?'life':'mortgage']||{};const sum=s.sum||0;
+  const keys=Object.keys(node.rates).map(Number);const tariffMax=Math.max(...keys);
+  const s=state.sel[isLife?'life':'mortgage']||{};const sum0=s.sum||0;
   const startAge=state.age>=1?state.age:Math.min(...keys);
   const plan=currentPlanObj();
+  const term=isMort?(state.mortTerm>=1?state.mortTerm:0):0;   // years
+  // mortgage ends at the earlier of: end of term, or end of tariff
+  const endAge=isMort&&term?Math.min(startAge+term-1,tariffMax):tariffMax;
   const rows=[];
-  for(let age=startAge;age<=maxAge;age++){
+  for(let age=startAge;age<=endAge;age++){
+    const yr=age-startAge+1;
+    // declining balance for mortgage (linear): full sum in year 1 → ~0 at end of term
+    const sum=isMort&&term?Math.round(sum0*(term-(yr-1))/term):sum0;
     const base=isLife?lifeRate(P,age,state.gender,state.smoke,sum):mortRate(P,age,state.gender,state.smoke,sum);
     const disc=plan?planPct(plan,age):state.agentDisc;
-    rows.push({year:age-startAge+1,age,base,disc,pay:clientPrice(base,disc)});
+    rows.push({year:yr,age,sum,base,disc,pay:clientPrice(base,disc)});
   }
-  return {rows,maxAge,sum,startAge,isLife,label:node.label||(isLife?'ביטוח חיים':'משכנתא')};
+  return {rows,maxAge:endAge,sum:sum0,startAge,isLife,isMort,term,declining:isMort&&!!term,label:node.label||(isLife?'ביטוח חיים':'משכנתא')};
 }
 function evoChartSVG(rows){
   if(!rows.length)return '';
@@ -866,12 +875,13 @@ function evoChartSVG(rows){
     <text x="${W-padR}" y="${H-6}" text-anchor="end" font-size="11" fill="var(--muted)">גיל ←</text>
   </svg>`;
 }
-function evoTableHTML(rows){
-  const body=rows.map(r=>`<tr><td class="tnum">${r.year}</td><td class="tnum">${r.age}</td>
+function evoTableHTML(rows,declining){
+  const sumCol=declining;
+  const body=rows.map(r=>`<tr><td class="tnum">${r.year}</td><td class="tnum">${r.age}</td>${sumCol?`<td class="tnum">${r.sum.toLocaleString('he-IL')}</td>`:''}
     <td class="tnum">${fmt(r.base)}</td><td class="tnum">${r.disc?(r.disc+'%'):'—'}</td>
     <td class="tnum"><b>${fmt(r.pay)}</b></td></tr>`).join('');
   return `<div class="evo-wrap"><table class="evo-table">
-    <thead><tr><th>שנה</th><th>גיל</th><th>תעריף בסיס</th><th>הנחה</th><th>פרמיה ללקוח</th></tr></thead>
+    <thead><tr><th>שנה</th><th>גיל</th>${sumCol?'<th>יתרת סכום</th>':''}<th>תעריף בסיס</th><th>הנחה</th><th>פרמיה ללקוח</th></tr></thead>
     <tbody>${body}</tbody></table></div>`;
 }
 let lastEvo=null;
@@ -885,15 +895,17 @@ function openEvo(){
   document.getElementById('evoSub').innerHTML=
     `${co} · ${ev.label} · סכום ביטוח ${ev.sum.toLocaleString('he-IL')} ₪ · ${state.gender==='M'?'גבר':'אישה'}${state.smoke==='smk'?' · מעשן':''}`+
     (state.clientName?` · ${state.clientName}`:'')+
-    `<br>מגיל ${ev.startAge} עד גיל ${ev.maxAge} (תום התעריף). פרמיה ראשונה ${fmt(ev.rows[0].pay)} ₪ → אחרונה ${fmt(last.pay)} ₪ לחודש.`;
+    (ev.declining
+      ? `<br>משכנתא לתקופת ${ev.term} שנים — סכום הביטוח יורד בקו ישר עם השנים. מגיל ${ev.startAge} עד גיל ${ev.maxAge}. פרמיה ראשונה ${fmt(ev.rows[0].pay)} ₪ → אחרונה ${fmt(last.pay)} ₪ לחודש.`
+      : `<br>מגיל ${ev.startAge} עד גיל ${ev.maxAge} (תום התעריף). פרמיה ראשונה ${fmt(ev.rows[0].pay)} ₪ → אחרונה ${fmt(last.pay)} ₪ לחודש.`);
   document.getElementById('evoChart').innerHTML=evoChartSVG(ev.rows);
-  document.getElementById('evoTable').innerHTML=evoTableHTML(ev.rows);
+  document.getElementById('evoTable').innerHTML=evoTableHTML(ev.rows,ev.declining);
   document.getElementById('evoModal').style.display='flex';
 }
 function closeEvo(){document.getElementById('evoModal').style.display='none';}
 function printEvo(){
-  if(!lastEvo)return;const ev=lastEvo;const co=CO[state.company].name;
-  const rowsHtml=ev.rows.map(r=>`<tr><td>${r.year}</td><td>${r.age}</td><td>${fmt(r.base)}</td><td>${r.disc?(r.disc+'%'):'—'}</td><td><b>${fmt(r.pay)}</b></td></tr>`).join('');
+  if(!lastEvo)return;const ev=lastEvo;const co=CO[state.company].name;const sc=ev.declining;
+  const rowsHtml=ev.rows.map(r=>`<tr><td>${r.year}</td><td>${r.age}</td>${sc?`<td>${r.sum.toLocaleString('he-IL')}</td>`:''}<td>${fmt(r.base)}</td><td>${r.disc?(r.disc+'%'):'—'}</td><td><b>${fmt(r.pay)}</b></td></tr>`).join('');
   const w=window.open('','_blank');if(!w){alert('חלון ההדפסה נחסם. אפשרו חלונות קופצים.');return;}
   w.document.write(`<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8"><title>התפתחות פרמיה</title>
     <style>body{font-family:Arial,sans-serif;color:#14243a;padding:24px;direction:rtl}
@@ -902,9 +914,9 @@ function printEvo(){
     th{background:#f0f3f8} svg{width:100%;height:auto;margin:12px 0}
     .cur{color:#c8962a}</style></head><body>
     <h1>📈 התפתחות פרמיה — ${co} · ${ev.label}</h1>
-    <div class="sub">סכום ביטוח ${ev.sum.toLocaleString('he-IL')} ₪ · ${state.gender==='M'?'גבר':'אישה'}${state.smoke==='smk'?' · מעשן':''}${state.clientName?(' · '+state.clientName):''} · מגיל ${ev.startAge} עד ${ev.maxAge}</div>
+    <div class="sub">סכום ביטוח ${ev.sum.toLocaleString('he-IL')} ₪ · ${state.gender==='M'?'גבר':'אישה'}${state.smoke==='smk'?' · מעשן':''}${state.clientName?(' · '+state.clientName):''} · מגיל ${ev.startAge} עד ${ev.maxAge}${ev.declining?(' · משכנתא '+ev.term+' שנים (סכום יורד)'):''}</div>
     ${evoChartSVG(ev.rows)}
-    <table><thead><tr><th>שנה</th><th>גיל</th><th>תעריף בסיס</th><th>הנחה</th><th>פרמיה ללקוח (חודשי)</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+    <table><thead><tr><th>שנה</th><th>גיל</th>${sc?'<th>יתרת סכום</th>':''}<th>תעריף בסיס</th><th>הנחה</th><th>פרמיה ללקוח (חודשי)</th></tr></thead><tbody>${rowsHtml}</tbody></table>
     <p style="color:#888;font-size:11px;margin-top:14px">המחירים להמחשה בלבד, מבוססים על התעריפונים שהוזנו במערכת. ${CO[state.company].name}.</p>
     </body></html>`);
   w.document.close();setTimeout(()=>{w.focus();w.print();},350);
@@ -922,6 +934,7 @@ function render(){
   document.getElementById('cmpSumField').style.display='none';
   document.getElementById('familyBar').style.display=family?'':'none';
   document.getElementById('memberLabelField').style.display=family?'':'none';
+  document.getElementById('mortTermField').style.display=(showSingle&&state.product==='mortgage')?'':'none';
   if(family){renderFamilyBar();}
   if(showSingle)renderSingle(); else renderCompare();
   if(typeof markAge==='function')markAge();
