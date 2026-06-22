@@ -242,9 +242,20 @@ tr.best .rank{background:var(--good);color:#fff}
 .ds-add{width:100%;border:1px dashed var(--accent);background:#fff8ec;color:#8a6400;border-radius:10px;padding:11px;cursor:pointer;font-weight:800;font-size:13.5px;margin-bottom:16px}
 .modal-foot{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-top:1px solid var(--line);background:var(--surface);gap:10px;flex-wrap:wrap}
 .ds-foot-l{display:flex;gap:8px;flex-wrap:wrap}
+.ds-cloud{font-weight:700;color:var(--good)}
+.ds-lockbar{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff8ec;border:1px solid #f0dcae;border-radius:10px;padding:10px 14px;margin-bottom:13px;font-size:12.5px;color:#7a5a00;flex-wrap:wrap}
+.ds-lockbar.open{background:var(--good-soft);border-color:#bfe3d5;color:#0f5e46}
+.ds-lockbar button{border:0;border-radius:8px;padding:7px 13px;cursor:pointer;font:inherit;font-weight:700;font-size:12.5px}
+.ds-unlock{background:var(--ink);color:#fff}
+.ds-lock{background:#fff;border:1px solid var(--line-2)!important;color:var(--ink-2)}
+.ds-ro{border:1px solid var(--line);border-radius:11px;padding:12px 14px;background:var(--panel);font-size:13px;color:var(--ink-2)}
+.ds-ro b{color:var(--ink)}
+.ds-ro .ds-ro-bands{color:var(--muted);font-size:12px;margin-top:4px}
 .ds-empty{font-size:13px;color:var(--muted);padding:14px;text-align:center;background:var(--panel);border-radius:10px}
 @media print{.top-actions .gear-btn{display:none}.modal-back{display:none!important}}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -333,8 +344,9 @@ tr.best .rank{background:var(--good);color:#fff}
       <h2>⚙️ הגדרות מדרגי הנחה</h2>
       <button class="modal-x" id="discClose">✕</button>
     </div>
-    <div class="modal-sub">נהלו את מדרגי ההנחה לכל חברה ומוצר. ההגדרות נשמרות במכשיר זה. השתמשו ב"ייצוא" כדי לשתף/לגבות.</div>
+    <div class="modal-sub">נהלו את מדרגי ההנחה לכל חברה ומוצר. השינויים מסתנכרנים <b>אוטומטית לכל הנציגים</b> דרך הענן. <span id="dsCloud" class="ds-cloud">מתחבר…</span></div>
     <div class="modal-body">
+      <div class="ds-lockbar" id="dsLockBar"></div>
       <div class="ds-co" id="dsCoTabs"></div>
       <div class="ds-cat" id="dsCatTabs"></div>
       <div class="ds-list" id="dsList"></div>
@@ -342,11 +354,12 @@ tr.best .rank{background:var(--good);color:#fff}
     </div>
     <div class="modal-foot">
       <div class="ds-foot-l">
-        <button class="btn-ghost" id="dsExport">ייצוא (JSON)</button>
+        <button class="btn-print" id="dsPublish">⬆️ פרסם לענן (לכל הנציגים)</button>
+        <button class="btn-ghost" id="dsExport">ייצוא (גיבוי)</button>
         <button class="btn-ghost" id="dsImport">ייבוא</button>
         <button class="btn-ghost" id="dsReset">איפוס לברירת מחדל</button>
       </div>
-      <button class="btn-print" id="dsDone">סגירה ושמירה</button>
+      <button class="btn-print" id="dsDone">סגירה</button>
     </div>
   </div>
 </div>
@@ -856,7 +869,40 @@ const DEFAULT_DISCOUNTS={
 let DISCOUNTS;
 try{const s=localStorage.getItem('matan_discounts_v1');DISCOUNTS=s?JSON.parse(s):JSON.parse(JSON.stringify(DEFAULT_DISCOUNTS));}
 catch(e){DISCOUNTS=JSON.parse(JSON.stringify(DEFAULT_DISCOUNTS));}
-function saveDiscounts(){try{localStorage.setItem('matan_discounts_v1',JSON.stringify(DISCOUNTS));}catch(e){}}
+
+/* ----- cloud sync (Firebase Firestore) ----- */
+const EDIT_CODE='matan2025';            // קוד לפתיחת עריכה (אפשר לשנות)
+let editUnlocked=false,modalOpen=false,fbDoc=null,cloudTimer=null,cloudOK=false;
+(function initCloud(){
+  try{
+    if(typeof firebase==='undefined')return;
+    firebase.initializeApp({
+      apiKey:"AIzaSyALJ2EBFQJoCAk7EkunISaByBdoeo3le8o",
+      authDomain:"matan-bituach.firebaseapp.com",
+      projectId:"matan-bituach",
+      storageBucket:"matan-bituach.firebasestorage.app",
+      messagingSenderId:"173176561755",
+      appId:"1:173176561755:web:4893a9938cf07d6c639f7e"
+    });
+    fbDoc=firebase.firestore().collection('config').doc('discounts');
+    fbDoc.onSnapshot(function(snap){
+      cloudOK=true;
+      if(snap&&snap.exists){const v=snap.data();
+        if(v&&v.json){try{DISCOUNTS=JSON.parse(v.json);try{localStorage.setItem('matan_discounts_v1',v.json);}catch(e){}}catch(e){return;}
+          lastDiscKey='__';
+          if(typeof render==='function')render();
+          if(modalOpen&&!editUnlocked){renderDsCo();renderDsCat();renderDsList();}
+          updateCloudBadge('✓ מסונכרן מהענן');}}
+      else{updateCloudBadge('הענן ריק — פרסמי כדי לשתף');}
+    },function(err){cloudOK=false;updateCloudBadge('הענן לא זמין כרגע');});
+  }catch(e){}
+})();
+function updateCloudBadge(t){const el=document.getElementById('dsCloud');if(el)el.textContent=t;}
+function cloudPush(){if(!fbDoc)return;try{fbDoc.set({json:JSON.stringify(DISCOUNTS),updated:Date.now()});updateCloudBadge('✓ נשמר בענן');}catch(e){updateCloudBadge('שמירה בענן נכשלה');}}
+function saveDiscounts(){
+  try{localStorage.setItem('matan_discounts_v1',JSON.stringify(DISCOUNTS));}catch(e){}
+  if(fbDoc&&editUnlocked){clearTimeout(cloudTimer);cloudTimer=setTimeout(cloudPush,700);updateCloudBadge('שומר…');}
+}
 function currentCat(){
   const compare=(state.mode==='compare')||(state.mode==='family'&&state.familySub==='compare');
   if(compare)return state.cmpKind==='life'?'risk':state.cmpKind;
@@ -910,8 +956,23 @@ document.getElementById('discPlanSel').addEventListener('change',()=>{applySelec
 
 /* ---- settings modal ---- */
 let dsCo='menora',dsCat='health';
-function openDisc(){dsCo=state.company;dsCat=currentCat();document.getElementById('discModal').style.display='flex';renderDsCo();renderDsCat();renderDsList();}
-function closeDisc(){document.getElementById('discModal').style.display='none';lastDiscKey='__';render();}
+function openDisc(){modalOpen=true;dsCo=state.company;dsCat=currentCat();document.getElementById('discModal').style.display='flex';renderLock();renderDsCo();renderDsCat();renderDsList();}
+function closeDisc(){modalOpen=false;document.getElementById('discModal').style.display='none';lastDiscKey='__';render();}
+function renderLock(){
+  const bar=document.getElementById('dsLockBar');
+  document.getElementById('dsAddPlan').style.display=editUnlocked?'':'none';
+  document.getElementById('dsImport').style.display=editUnlocked?'':'none';
+  document.getElementById('dsReset').style.display=editUnlocked?'':'none';
+  document.getElementById('dsPublish').style.display=editUnlocked?'':'none';
+  if(editUnlocked){bar.className='ds-lockbar open';
+    bar.innerHTML='<span>🔓 מצב עריכה פעיל — שינויים נשמרים ומסתנכרנים אוטומטית לכל הנציגים.</span><button class="ds-lock" id="dsLockBtn">נעל עריכה</button>';
+    bar.querySelector('#dsLockBtn').onclick=()=>{editUnlocked=false;renderLock();renderDsList();};
+  }else{bar.className='ds-lockbar';
+    bar.innerHTML='<span>🔒 תצוגה בלבד. לעריכת ההנחות (למנהל) — הזיני קוד.</span><button class="ds-unlock" id="dsUnlockBtn">פתח עריכה</button>';
+    bar.querySelector('#dsUnlockBtn').onclick=()=>{const c=prompt('הזיני קוד עריכה:');if(c===null)return;
+      if(c===EDIT_CODE){editUnlocked=true;renderLock();renderDsList();}else alert('קוד שגוי.');};
+  }
+}
 document.getElementById('settingsBtn').onclick=openDisc;
 document.getElementById('discClose').onclick=closeDisc;
 document.getElementById('dsDone').onclick=closeDisc;
@@ -923,7 +984,13 @@ function renderDsCat(){document.getElementById('dsCatTabs').innerHTML=CATS.map(c
 function plansFor(){DISCOUNTS[dsCo]=DISCOUNTS[dsCo]||{};DISCOUNTS[dsCo][dsCat]=DISCOUNTS[dsCo][dsCat]||[];return DISCOUNTS[dsCo][dsCat];}
 function renderDsList(){
   const list=plansFor();const el=document.getElementById('dsList');
-  if(!list.length){el.innerHTML='<div class="ds-empty">אין מדרגי הנחה למוצר זה. הוסיפו אחד למטה.</div>';return;}
+  if(!list.length){el.innerHTML='<div class="ds-empty">אין מדרגי הנחה למוצר זה'+(editUnlocked?'. הוסיפו אחד למטה.':'.')+'</div>';return;}
+  if(!editUnlocked){
+    el.innerHTML=list.map(p=>{const flat=p.type!=='banded';
+      const body=flat?`הנחה: <b>${p.value||0}%</b>`:'מדרג לפי גיל:<div class="ds-ro-bands">'+(p.bands||[]).map(b=>`גיל ${b.from}–${b.to}: ${b.pct}%`).join(' · ')+'</div>';
+      return `<div class="ds-ro"><b>${p.name||''}</b>${p.code?(' · קוד '+p.code):''}<br>${body}${p.note?('<div class="ds-ro-bands">📝 '+p.note+'</div>'):''}</div>`;}).join('');
+    return;
+  }
   el.innerHTML=list.map((p,i)=>{
     const flat=p.type!=='banded';
     const bands=(p.bands||[]).map((b,bi)=>`<div class="ds-band-row" data-i="${i}" data-bi="${bi}">
@@ -959,6 +1026,7 @@ function renderDsList(){
   });
 }
 document.getElementById('dsAddPlan').onclick=()=>{plansFor().push({id:pid(),name:'מדרג חדש',code:'',type:'flat',value:0,note:''});saveDiscounts();renderDsList();};
+document.getElementById('dsPublish').onclick=()=>{if(!fbDoc){alert('הענן אינו זמין כרגע. נסי שוב מאוחר יותר.');return;}cloudPush();alert('פורסם לענן! ההנחות מעודכנות כעת אצל כל הנציגים.');};
 document.getElementById('dsReset').onclick=()=>{if(confirm('לאפס את כל מדרגי ההנחה לברירת המחדל? פעולה זו תמחק שינויים שביצעת.')){DISCOUNTS=JSON.parse(JSON.stringify(DEFAULT_DISCOUNTS));saveDiscounts();renderDsList();}};
 document.getElementById('dsExport').onclick=()=>{const t=JSON.stringify(DISCOUNTS);
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>alert('הגדרות ההנחות הועתקו ללוח. הדביקו לקובץ לגיבוי או שלחו אלינו.'),()=>prompt('העתיקו את הטקסט:',t));}
